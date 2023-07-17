@@ -1,0 +1,2 @@
+git+https://github.com/Havilash/Pygame-UI.git@main#egg=pygame_ui
+pygame
