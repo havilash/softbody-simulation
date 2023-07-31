@@ -118,12 +118,14 @@ class Spring:
 
         force_s = self.stiffness * (abs(self.b.pos - self.a.pos) - self.rest_length)
 
-        direction_a = (self.b.pos - self.a.pos) / np.maximum(
-            abs(self.b.pos - self.a.pos), 1
-        )
-        direction_b = (self.a.pos - self.b.pos) / np.maximum(
-            abs(self.a.pos - self.b.pos), 1
-        )
+        tolerance = 1e-6
+        # direction_a = (self.b.pos - self.a.pos) / (np.linalg.norm(self.b.pos - self.a.pos) + tolerance)
+        # direction_b = (self.a.pos - self.b.pos) / (np.linalg.norm(self.a.pos - self.b.pos) + tolerance)
+
+        direction_a = (self.b.pos - self.a.pos) / (abs(self.b.pos - self.a.pos) + tolerance)
+        direction_b = (self.a.pos - self.b.pos) / (abs(self.a.pos - self.b.pos) + tolerance)
+
+
         velocity_diff = self.b.velocity - self.a.velocity
         force_d = direction_a * velocity_diff * self.damping_factor
 
