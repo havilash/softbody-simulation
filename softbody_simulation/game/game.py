@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import math
 
 from constants import *
 from utils import *
@@ -8,8 +9,11 @@ from game_objects import *
 pygame.init()
 
 
+
 def generate_objects(pos, size, spacing, mass_point_kwargs, spring_kwargs):
-    diagonal_rest_length = math.sqrt(2 * spacing**2)
+    # diagonal_rest_length = math.sqrt(2) * spring_kwargs["rest_length"]
+    # diagonal_spring_kwargs = spring_kwargs.copy()
+    # diagonal_spring_kwargs["rest_length"] = diagonal_rest_length
     mass_points = []
     for j in range(0, size[1] * spacing, spacing):
         for i in range(0, size[0] * spacing, spacing):
@@ -23,13 +27,15 @@ def generate_objects(pos, size, spacing, mass_point_kwargs, spring_kwargs):
             if x + 1 < size[0]:
                 springs.append(
                     Spring(
-                        (mass_points[i(x, y)], mass_points[i(x + 1, y)]), **spring_kwargs
+                        (mass_points[i(x, y)], mass_points[i(x + 1, y)]), 
+                        **spring_kwargs
                     )
                 )
             if y + 1 < size[1]:
                 springs.append(
                     Spring(
-                        (mass_points[i(x, y)], mass_points[i(x, y + 1)]), **spring_kwargs
+                        (mass_points[i(x, y)], mass_points[i(x, y + 1)]), 
+                        **spring_kwargs
                     )
                 )
             if x + 1 < size[0] and y + 1 < size[1]:
@@ -84,10 +90,10 @@ def game(win):
 
     mass_points, springs = generate_objects(
         (100, 100),
-        (2, 10),
-        40,
+        (2, 8),
+        50,
         {"mass": 10},
-        {"stiffness": 3000, "rest_length": 40, "damping_factor": 1},
+        {"stiffness": 1000, "rest_length": 50, "damping_factor": 1},
     )
 
     obstacles = [
