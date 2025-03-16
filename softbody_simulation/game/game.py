@@ -93,7 +93,7 @@ def game(win):
         (2, 8),
         50,
         {"mass": 10},
-        {"stiffness": 1000, "rest_length": 50, "damping_factor": 1},
+        {"stiffness": 1000, "rest_length": 50, "damping_factor": 50},
     )
 
     obstacles = [

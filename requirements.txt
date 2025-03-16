@@ -1,2 +1,3 @@
-git+https://github.com/Havilash/Pygame-UI.git@main#egg=pygame_ui
+git+https://github.com/Havilash/pygame-ui.git@main#egg=pygame_ui
 pygame
+numpy

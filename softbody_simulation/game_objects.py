@@ -116,15 +116,15 @@ class Spring:
     def update(self):
         self.force = 0
 
-        force_s = self.stiffness * (abs(self.b.pos - self.a.pos) - self.rest_length)
+        force_s = -self.stiffness * (self.rest_length - abs(self.b.pos - self.a.pos))
 
-        tolerance = 1e-6
         # direction_a = (self.b.pos - self.a.pos) / (np.linalg.norm(self.b.pos - self.a.pos) + tolerance)
         # direction_b = (self.a.pos - self.b.pos) / (np.linalg.norm(self.a.pos - self.b.pos) + tolerance)
 
-        direction_a = (self.b.pos - self.a.pos) / (abs(self.b.pos - self.a.pos) + tolerance)
-        direction_b = (self.a.pos - self.b.pos) / (abs(self.a.pos - self.b.pos) + tolerance)
-
+        pos_delta = self.b.pos - self.a.pos
+        pos_norm = np.linalg.norm(pos_delta)
+        direction_a = pos_delta / pos_norm if pos_norm != 0 else np.zeros_like(pos_delta)
+        direction_b = -direction_a
 
         velocity_diff = self.b.velocity - self.a.velocity
         force_d = direction_a * velocity_diff * self.damping_factor
@@ -133,6 +133,16 @@ class Spring:
 
         self.a.force += self.force * direction_a
         self.b.force += self.force * direction_b
+
+        # print("Spring Update Log:")
+        # print(f"  Spring Force (force_s): {force_s}")
+        # print(f"  Unit Direction A (direction_a): {direction_a}")
+        # print(f"  Unit Direction B (direction_b): {direction_b}")
+        # print(f"  Velocity Difference (velocity_diff): {velocity_diff}")
+        # print(f"  Damping Force (force_d): {force_d}")
+        # print(f"  Total Force (self.force): {self.force}")
+        # print(f"  Mass Point A Total Force (self.a.force): {self.a.force}")
+        # print(f"  Mass Point B Total Force (self.b.force): {self.b.force}")
 
     def draw(self, win):
         pygame.draw.line(win, WHITE, self.a.pos, self.b.pos)

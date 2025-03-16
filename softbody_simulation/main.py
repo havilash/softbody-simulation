@@ -1,8 +1,5 @@
-import math
-import os.path
 import sys
 import pygame
-import numpy as np
 
 from constants import *
 from utils import *
