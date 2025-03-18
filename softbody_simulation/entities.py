@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 
-from constants import *
+from softbody_simulation.consts import *
 from utils import *
 
 
@@ -23,15 +23,17 @@ class MassPoint(GameObject):
         mass: float,
         velocity: np.ndarray = np.array([0, 0]),
         use_gravity=True,
+        damping=0,
     ):
         self.pos = pos
-        self.inital_pos = pos
+        self.initial_pos = pos
         self.velocity = velocity
-        self.inital_velocity = velocity
-        self.pvelocity = self.velocity
+        self.initial_velocity = velocity
+        self.previous_velocity = self.velocity
         self.mass = mass
         self.force = 0
         self.use_gravity = use_gravity
+        self.damping = damping
 
         self.surface = pygame.Surface(
             (self.RADIUS * 2, self.RADIUS * 2), pygame.SRCALPHA, 32
@@ -44,8 +46,11 @@ class MassPoint(GameObject):
     def update(self, obstacles=None, mass_points=None):
 
         if self.use_gravity:
-            force_gravity = -np.array([0, 1]) * GRAVITY * self.mass  # gravity
-            self.force += force_gravity
+            gravity_force = -np.array([0, 1]) * GRAVITY * self.mass  # gravity
+            self.force += gravity_force
+
+        damping_force = -self.damping * self.velocity
+        self.force += damping_force
 
         self.velocity = self.force * self.deltatime / self.mass + self.velocity
 
@@ -63,9 +68,9 @@ class MassPoint(GameObject):
         win.blit(self.surface, self.pos - self.RADIUS)
 
     def mass_point_collision(self, mass_points):
-        for masspoint in mass_points:
-            if ball_ball_collide(self, masspoint):
-                line = np.array([self.pos, masspoint.pos])
+        for mass_point in mass_points:
+            if ball_ball_collide(self, mass_point):
+                line = np.array([self.pos, mass_point.pos])
                 line_dir = line[0] - line[1]
                 self.pos = line_dir * self.velocity * self.deltatime + self.pos
 
@@ -75,7 +80,7 @@ class MassPoint(GameObject):
                 if isinstance(obstacle, PolygonObstacle):
                     for i in range(len(obstacle.points) - 1):
                         line = obstacle.points[i], obstacle.points[i + 1]
-                        if circle_line_distance(line, self.pos) <= self.RADIUS + 1:
+                        if distance_point_to_line(self.pos, line) <= self.RADIUS + 1:
                             self.reflect(line)
 
     def boundary_collision(self):
@@ -107,42 +112,29 @@ class MassPoint(GameObject):
 
 
 class Spring:
-    def __init__(self, mass_points, stiffness, rest_length, damping_factor):
+    def __init__(self, mass_points, stiffness, damping, rest_length=None):
         self.a, self.b = mass_points
         self.stiffness = stiffness
-        self.rest_length = rest_length
-        self.damping_factor = damping_factor
+        self.rest_length = rest_length or np.linalg.norm(self.a.pos - self.b.pos)
+        self.damping = damping
 
     def update(self):
-        self.force = 0
-
-        force_s = -self.stiffness * (self.rest_length - abs(self.b.pos - self.a.pos))
-
-        # direction_a = (self.b.pos - self.a.pos) / (np.linalg.norm(self.b.pos - self.a.pos) + tolerance)
-        # direction_b = (self.a.pos - self.b.pos) / (np.linalg.norm(self.a.pos - self.b.pos) + tolerance)
-
         pos_delta = self.b.pos - self.a.pos
         pos_norm = np.linalg.norm(pos_delta)
-        direction_a = pos_delta / pos_norm if pos_norm != 0 else np.zeros_like(pos_delta)
-        direction_b = -direction_a
+
+        direction = pos_delta / pos_norm if pos_norm != 0 else np.zeros_like(pos_delta)
+
+        spring_force = -self.stiffness * (self.rest_length - pos_norm) * direction
 
         velocity_diff = self.b.velocity - self.a.velocity
-        force_d = direction_a * velocity_diff * self.damping_factor
+        proj = np.dot(velocity_diff, direction)
 
-        self.force += force_s + force_d
+        damping_force = self.damping * proj * direction
 
-        self.a.force += self.force * direction_a
-        self.b.force += self.force * direction_b
+        total_force = spring_force + damping_force
 
-        # print("Spring Update Log:")
-        # print(f"  Spring Force (force_s): {force_s}")
-        # print(f"  Unit Direction A (direction_a): {direction_a}")
-        # print(f"  Unit Direction B (direction_b): {direction_b}")
-        # print(f"  Velocity Difference (velocity_diff): {velocity_diff}")
-        # print(f"  Damping Force (force_d): {force_d}")
-        # print(f"  Total Force (self.force): {self.force}")
-        # print(f"  Mass Point A Total Force (self.a.force): {self.a.force}")
-        # print(f"  Mass Point B Total Force (self.b.force): {self.b.force}")
+        self.a.force += total_force
+        self.b.force -= total_force
 
     def draw(self, win):
         pygame.draw.line(win, WHITE, self.a.pos, self.b.pos)
