@@ -1,9 +1,8 @@
-
 import pygame
 import numpy as np
-from consts import WIN_SIZE, FPS
-from softbody_simulation.entities import MassPoint, Spring, PolygonObstacle
-from softbody_simulation.entities import GameObject  # if needed
+from consts import FPS
+from softbody_simulation.entities import MassPoint, Spring, PolygonObstacle, GameObject
+
 
 class SimulationScript:
     def __init__(self):
@@ -14,36 +13,24 @@ class SimulationScript:
             mass_point_kwargs={
                 "mass": 1,
                 "damping": 0.1,
-                "velocity": np.array([200, -100])
+                "velocity": np.array([200, -100]),
             },
-            spring_kwargs={
-                "stiffness": 200,
-                "damping": 1
-            },
+            spring_kwargs={"stiffness": 200, "damping": 1},
         )
 
         self.obstacles = [
             PolygonObstacle(np.array([(0, 600), (0, 600), (800, 560), (800, 600)]))
         ]
 
-    def process_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 3:
-                mouse_pos = pygame.mouse.get_pos()
-                new_point = MassPoint(np.array(mouse_pos), mass=1)
-                self.mass_points.append(new_point)
-
-    def update(self) -> None:
-        clock = pygame.time.Clock()
-        current_fps = clock.get_fps()
-        dt = current_fps if current_fps > 0 else FPS
-        GameObject.set_deltatime(dt)
+    def update(self, delta_time: float) -> None:
+        GameObject.set_delta_time(delta_time)
 
         for spring in self.springs:
             spring.update()
         for mass_point in self.mass_points:
             others = [m for m in self.mass_points if m != mass_point]
             mass_point.update(self.obstacles, others)
+
 
 def generate_objects(pos, size, spacing, mass_point_kwargs, spring_kwargs):
     mass_points = []

@@ -1,41 +1,39 @@
 import pygame
-import numpy as np
-from scenes.scene_manager import Scene, get_scene_manager
 from consts import (
+    BG_COLOR,
     TRANSPARENT_COLOR,
     TRANSPARENT_HOVER_COLOR,
-    WIN_SIZE,
-    BG_COLOR,
-    FPS,
     FONT,
     FONT_COLOR,
 )
-import pygame_ui as ui
+from softbody_simulation.scenes.scene import UIScene, get_scene_manager
 from softbody_simulation.scripts.simulation import SimulationScript
+from softbody_simulation.ui_elements.ui_button import UIButton
 
 
-class SimulationScene(Scene):
+class SimulationScene(UIScene):
     def __init__(self, screen: pygame.Surface):
-        super().__init__(screen)
-        self.screen = screen
+        super().__init__(screen, background_color=BG_COLOR)
 
         self.script = SimulationScript()
 
-        self.back_button = ui.Button(
-            (10, 10),
-            (100, 40),
+        back_button = UIButton(
+            pos=(10, 10),
+            size=(100, 40),
             text="Back",
             font=FONT,
+            font_size=20,
             font_color=FONT_COLOR,
             color=TRANSPARENT_COLOR,
             hover_color=TRANSPARENT_HOVER_COLOR,
-            func=self.go_back,
+            callback=self.go_back,
         )
+        self.add_ui_element(back_button)
 
-    def go_back(self, screen: pygame.Surface):
-        from scenes.main_menu import MainMenu
+    def go_back(self):
+        from scenes.main_menu import MainMenuScene
 
-        get_scene_manager().switch_scene(MainMenu(self.screen))
+        get_scene_manager().switch_scene(MainMenuScene(self.screen))
 
     def handle_events(self) -> bool:
         events = pygame.event.get()
@@ -43,25 +41,24 @@ class SimulationScene(Scene):
             if event.type == pygame.QUIT:
                 return False
 
-            mouse_pos = pygame.mouse.get_pos()
-            if (
-                self.back_button.is_over(mouse_pos)
-                and event.type == pygame.MOUSEBUTTONDOWN
-            ):
-                self.back_button.call_back(self.screen)
+            for element in self.ui_elements:
+                element.handle_event(event)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False
 
-            self.script.process_event(event)
         return True
 
-    def update(self) -> None:
-        self.script.update()
+    def update(self, delta_time: float) -> None:
+        self.script.update(delta_time)
+
+        for element in self.ui_elements:
+            element.update()
 
     def render(self) -> None:
         self.screen.fill(BG_COLOR)
+
         for spring in self.script.springs:
             spring.draw(self.screen)
         for mass_point in self.script.mass_points:
@@ -69,5 +66,6 @@ class SimulationScene(Scene):
         for obstacle in self.script.obstacles:
             obstacle.draw(self.screen)
 
-        self.back_button.draw(self.screen)
+        for element in self.ui_elements:
+            element.draw(self.screen)
         pygame.display.update()

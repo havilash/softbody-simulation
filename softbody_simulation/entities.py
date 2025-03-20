@@ -9,7 +9,7 @@ class GameObject:
     deltatime = FPS
 
     @classmethod
-    def set_deltatime(cls, fps):
+    def set_delta_time(cls, fps):
         cls.deltatime = 1 / fps
 
 

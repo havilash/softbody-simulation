@@ -1,36 +1,10 @@
-import sys
+from softbody_simulation.consts import FPS
+from softbody_simulation.scenes.scene import Scene, set_scene_manager
+
 import pygame
-from abc import ABC, abstractmethod
-from consts import FPS
 
-# Global variable for scene manager (singleton‐like access)
-_scene_manager = None
+import sys
 
-def get_scene_manager():
-    return _scene_manager
-
-def set_scene_manager(manager):
-    global _scene_manager
-    _scene_manager = manager
-
-class Scene(ABC):
-    def __init__(self, screen: pygame.Surface):
-        self.screen = screen
-
-    @abstractmethod
-    def handle_events(self) -> bool:
-        """Process input events. Return False to exit the app."""
-        pass
-
-    @abstractmethod
-    def update(self) -> None:
-        """Update scene state."""
-        pass
-
-    @abstractmethod
-    def render(self) -> None:
-        """Render scene contents."""
-        pass
 
 class SceneManager:
     def __init__(self, screen: pygame.Surface, initial_scene: Scene):
@@ -46,10 +20,14 @@ class SceneManager:
         running = True
         while running:
             clock.tick(FPS)
+            current_fps = clock.get_fps()
+            delta_time = current_fps if current_fps > 0 else FPS
+
             if not self.current_scene.handle_events():
                 running = False
                 break
-            self.current_scene.update()
+
+            self.current_scene.update(delta_time)
             self.current_scene.render()
         pygame.quit()
         sys.exit()

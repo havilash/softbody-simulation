@@ -2,6 +2,10 @@ import pygame
 import math
 import numpy as np
 
+from softbody_simulation.consts import FONT, FONT_COLOR, TRANSPARENT_COLOR, TRANSPARENT_HOVER_COLOR
+from softbody_simulation.ui_elements.ui_button import UIButton
+from softbody_simulation.ui_elements.ui_text import UIText
+
 
 def distance(p1, p2):
     d = p2 - p1
@@ -39,3 +43,4 @@ def distance_point_to_line(
     t = max(0, min(1, t))
     projection = start + t * (end - start)
     return np.linalg.norm(point - projection)
+

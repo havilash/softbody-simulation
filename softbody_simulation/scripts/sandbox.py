@@ -2,7 +2,7 @@ import pygame
 from typing import List, Optional
 import numpy as np
 from consts import WIN_SIZE
-from softbody_simulation.entities import MassPoint, Spring
+from softbody_simulation.entities import GameObject, MassPoint, Spring
 from softbody_simulation.utils import distance_point_to_line
 
 
@@ -26,7 +26,7 @@ class SandboxScript:
         self.paused = False
         self.single_step = False
 
-    # UI
+    # UI update functions
     def update_mass(self, value: float) -> None:
         self.default_mass = value
         if self.selected_mass_point:
@@ -54,42 +54,38 @@ class SandboxScript:
         if self.paused:
             self.single_step = True
 
-    # Event
-    def process_event(self, event: pygame.event.Event) -> None:
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            if event.button == 1:
-                mass_point = self._get_mass_point_at(mouse_pos)
-                if mass_point:
-                    if (
-                        self.selected_mass_point
-                        and self.selected_mass_point != mass_point
-                    ):
-                        new_spring = Spring(
-                            (self.selected_mass_point, mass_point),
-                            stiffness=self.default_stiffness,
-                            rest_length=self.default_rest_length,
-                            damping=self.default_damping,
-                        )
-                        self.springs.append(new_spring)
-                        self.selected_mass_point = None
-                    else:
-                        self.selected_mass_point = mass_point
-                        self.selected_spring = None
-                else:
-                    spring = self._get_spring_at(mouse_pos)
-                    if spring:
-                        self.selected_spring = spring
-                        self.selected_mass_point = None
-                    else:
-                        self.selected_mass_point = None
-                        self.selected_spring = None
-            elif event.button == 3:
-                new_point = MassPoint(np.array(mouse_pos), self.default_mass)
-                self.mass_points.append(new_point)
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            self.selected_mass_point = None
-            self.selected_spring = None
+    # Simulation input functions
+    def handle_left_click(self, mouse_pos) -> None:
+        mass_point = self._get_mass_point_at(mouse_pos)
+        if mass_point:
+            if self.selected_mass_point and self.selected_mass_point != mass_point:
+                new_spring = Spring(
+                    (self.selected_mass_point, mass_point),
+                    stiffness=self.default_stiffness,
+                    rest_length=self.default_rest_length,
+                    damping=self.default_damping,
+                )
+                self.springs.append(new_spring)
+                self.selected_mass_point = None
+            else:
+                self.selected_mass_point = mass_point
+                self.selected_spring = None
+        else:
+            spring = self._get_spring_at(mouse_pos)
+            if spring:
+                self.selected_spring = spring
+                self.selected_mass_point = None
+            else:
+                self.selected_mass_point = None
+                self.selected_spring = None
+
+    def handle_right_click(self, mouse_pos) -> None:
+        new_point = MassPoint(np.array(mouse_pos), self.default_mass)
+        self.mass_points.append(new_point)
+
+    def handle_escape_keydown(self, key) -> None:
+        self.selected_mass_point = None
+        self.selected_spring = None
 
     def _get_mass_point_at(self, pos, radius: int = 10) -> Optional[MassPoint]:
         for point in self.mass_points:
@@ -99,13 +95,15 @@ class SandboxScript:
 
     def _get_spring_at(self, pos, threshold: int = 5) -> Optional[Spring]:
         for spring in self.springs:
-            p1, p2 = spring.mass_points[0].pos, spring.mass_points[1].pos
-            if distance_point_to_line(np.array(pos), p1, p2) <= threshold:
+            p1, p2 = spring.a.pos, spring.b.pos
+            if distance_point_to_line(np.array(pos), (p1, p2)) <= threshold:
                 return spring
         return None
 
-    # Update
-    def update(self) -> None:
+    # Update simulation state
+    def update(self, delta_time: float) -> None:
+        GameObject.set_delta_time(delta_time)
+
         if self.paused:
             if self.single_step:
                 self._update_simulation()

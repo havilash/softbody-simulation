@@ -101,7 +101,7 @@ def game(win):
     while run:
         time_passed = clock.tick(FPS)
         fps = clock.get_fps()
-        GameObject.set_deltatime(fps if fps > 0 else FPS)
+        GameObject.set_delta_time(fps if fps > 0 else FPS)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
