@@ -76,12 +76,12 @@ class MassPoint(GameObject):
 
     def obstacle_collision(self, obstacles):
         for obstacle in obstacles:
-            if pixel_collide(self, obstacle):
-                if isinstance(obstacle, PolygonObstacle):
-                    for i in range(len(obstacle.points) - 1):
-                        line = obstacle.points[i], obstacle.points[i + 1]
-                        if distance_point_to_line(self.pos, line) <= self.RADIUS + 1:
-                            self.reflect(line)
+            # if pixel_collide(self, obstacle):
+            if isinstance(obstacle, PolygonObstacle):
+                for i in range(len(obstacle.points) - 1):
+                    line = obstacle.points[i], obstacle.points[i + 1]
+                    if distance_point_to_line(self.pos, line) <= self.RADIUS + 1:
+                        self.reflect(line)
 
     def boundary_collision(self):
         if self.pos[0] - self.RADIUS <= 0:
@@ -157,3 +157,51 @@ class PolygonObstacle(GameObject):
 
     def draw(self, win: pygame.Surface):
         win.blit(self.surface, self.pos)
+
+    def contains_point(self, point):
+        """
+        Check if a point is inside the polygon using ray casting algorithm.
+        """
+        if len(self.points) < 3:
+            return False
+
+        inside = False
+        n = len(self.points)
+
+        p1x, p1y = self.points[0]
+        for i in range(n + 1):
+            p2x, p2y = self.points[i % n]
+
+            if point[1] > min(p1y, p2y):
+                if point[1] <= max(p1y, p2y):
+                    if point[0] <= max(p1x, p2x):
+                        if p1y != p2y:
+                            x_intersect = (point[1] - p1y) * (p2x - p1x) / (
+                                p2y - p1y
+                            ) + p1x
+                        if p1x == p2x or point[0] <= x_intersect:
+                            inside = not inside
+            p1x, p1y = p2x, p2y
+
+        return inside
+
+    def near_boundary(self, point, threshold=5):
+        """
+        Check if a point is near the boundary of the polygon.
+        """
+        if len(self.points) < 2:
+            return False
+
+        n = len(self.points)
+
+        for i in range(n):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % n]
+
+            # Calculate distance from point to line segment
+            dist = distance_point_to_line(point, (p1, p2))
+
+            if dist <= threshold:
+                return True
+
+        return False

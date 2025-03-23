@@ -2,7 +2,12 @@ import pygame
 import math
 import numpy as np
 
-from softbody_simulation.consts import FONT, FONT_COLOR, TRANSPARENT_COLOR, TRANSPARENT_HOVER_COLOR
+from softbody_simulation.consts import (
+    FONT,
+    FONT_COLOR,
+    TRANSPARENT_COLOR,
+    TRANSPARENT_HOVER_COLOR,
+)
 from softbody_simulation.ui_elements.ui_button import UIButton
 from softbody_simulation.ui_elements.ui_text import UIText
 
@@ -44,3 +49,11 @@ def distance_point_to_line(
     projection = start + t * (end - start)
     return np.linalg.norm(point - projection)
 
+
+class Singleton:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)  # Fix: No extra arguments
+        return cls._instance

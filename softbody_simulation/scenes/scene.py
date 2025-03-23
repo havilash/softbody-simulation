@@ -4,18 +4,6 @@ from abc import ABC, abstractmethod
 from consts import BG_COLOR
 from softbody_simulation.ui_elements.ui_element import UIElement
 
-# Global variable for scene manager (singleton‐like access)
-_scene_manager = None
-
-
-def get_scene_manager():
-    return _scene_manager
-
-
-def set_scene_manager(manager):
-    global _scene_manager
-    _scene_manager = manager
-
 
 class Scene(ABC):
     def __init__(self, screen: pygame.Surface):

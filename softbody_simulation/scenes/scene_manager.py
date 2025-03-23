@@ -1,16 +1,29 @@
+from typing import Self
 from softbody_simulation.consts import FPS
-from softbody_simulation.scenes.scene import Scene, set_scene_manager
+from softbody_simulation.scenes.scene import Scene
 
 import pygame
 
 import sys
 
+from softbody_simulation.utils import Singleton
 
-class SceneManager:
-    def __init__(self, screen: pygame.Surface, initial_scene: Scene):
+
+class SceneManager(Singleton):
+    initialized = False
+
+    def __init__(
+        self, screen: pygame.Surface | None = None, initial_scene: Scene | None = None
+    ):
+        if self.initialized:
+            return
+
+        if screen is None or initial_scene is None:
+            raise ValueError("SceneManager must be initialized")
+
+        self.initialized = True
         self.screen = screen
         self.current_scene = initial_scene
-        set_scene_manager(self)  # Set global reference
 
     def switch_scene(self, new_scene: Scene):
         self.current_scene = new_scene

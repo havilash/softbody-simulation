@@ -6,7 +6,8 @@ from consts import (
     FONT,
     FONT_COLOR,
 )
-from softbody_simulation.scenes.scene import UIScene, get_scene_manager
+from softbody_simulation.scenes.scene import UIScene
+from softbody_simulation.scenes.scene_manager import SceneManager
 from softbody_simulation.scripts.simulation import SimulationScript
 from softbody_simulation.ui_elements.ui_button import UIButton
 
@@ -33,7 +34,7 @@ class SimulationScene(UIScene):
     def go_back(self):
         from scenes.main_menu import MainMenuScene
 
-        get_scene_manager().switch_scene(MainMenuScene(self.screen))
+        SceneManager().switch_scene(MainMenuScene(self.screen))
 
     def handle_events(self) -> bool:
         events = pygame.event.get()

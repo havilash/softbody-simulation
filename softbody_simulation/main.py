@@ -10,6 +10,7 @@ def main():
     screen = pygame.display.set_mode(WIN_SIZE)
     initial_scene: Scene = MainMenuScene(screen)
     manager = SceneManager(screen, initial_scene)
+
     manager.run()
 
 
