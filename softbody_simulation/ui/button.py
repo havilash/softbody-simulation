@@ -1,8 +1,8 @@
 import pygame
-from .ui_element import UIElement
+from .element import UIElement
 
 
-class UIButton(UIElement):
+class Button(UIElement):
     def __init__(
         self,
         pos,

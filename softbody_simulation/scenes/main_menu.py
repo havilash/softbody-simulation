@@ -1,18 +1,17 @@
 import pygame
 from softbody_simulation.scenes.scene import UIScene
 from softbody_simulation.consts import WIN_SIZE, BG_COLOR, FONT, FONT_COLOR
-from softbody_simulation.scenes.sandbox import SandboxScene
-from softbody_simulation.scenes.simulation import SimulationScene
+from softbody_simulation.scenes.sandbox import Sandbox
+from softbody_simulation.scenes.simulation import Simulation
 from softbody_simulation.scenes.scene_manager import SceneManager
-from softbody_simulation.ui_elements.ui_button import UIButton
-from softbody_simulation.ui_elements.ui_text import UIText
+from softbody_simulation.ui import Button, Text
 
 
-class MainMenuScene(UIScene):
+class MainMenu(UIScene):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen, background_color=BG_COLOR)
 
-        self.title = UIText(
+        self.title = Text(
             center_pos=(WIN_SIZE[0] / 2, WIN_SIZE[1] / 4),
             text="Spring Simulation",
             size=75,
@@ -21,7 +20,7 @@ class MainMenuScene(UIScene):
         )
         self.add_ui_element(self.title)
 
-        self.start_button = UIButton(
+        self.start_button = Button(
             pos=(WIN_SIZE[0] // 2 - 100, WIN_SIZE[1] // 2 - 25),
             size=(200, 50),
             text="Start",
@@ -34,7 +33,7 @@ class MainMenuScene(UIScene):
         )
         self.add_ui_element(self.start_button)
 
-        self.sandbox_button = UIButton(
+        self.sandbox_button = Button(
             pos=(WIN_SIZE[0] // 2 - 100, WIN_SIZE[1] // 2 + 50),
             size=(200, 50),
             text="Sandbox",
@@ -48,10 +47,10 @@ class MainMenuScene(UIScene):
         self.add_ui_element(self.sandbox_button)
 
     def go_to_simulation(self):
-        SceneManager().switch_scene(SimulationScene(self.screen))
+        SceneManager().switch_scene(Simulation(self.screen))
 
     def go_to_sandbox(self):
-        SceneManager().switch_scene(SandboxScene(self.screen))
+        SceneManager().switch_scene(Sandbox(self.screen))
 
     def handle_events(self) -> bool:
         events = pygame.event.get()

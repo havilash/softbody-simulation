@@ -8,17 +8,17 @@ from softbody_simulation.consts import (
 )
 from softbody_simulation.scenes.scene import UIScene
 from softbody_simulation.scenes.scene_manager import SceneManager
-from softbody_simulation.scripts.simulation import SimulationScript
-from softbody_simulation.ui_elements.ui_button import UIButton
+from softbody_simulation.scripts.simulation import Simulation as SimulationScript
+from softbody_simulation.ui import Button
 
 
-class SimulationScene(UIScene):
+class Simulation(UIScene):
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen, background_color=BG_COLOR)
 
         self.script = SimulationScript()
 
-        back_button = UIButton(
+        back_button = Button(
             pos=(10, 10),
             size=(100, 40),
             text="Back",
@@ -32,9 +32,9 @@ class SimulationScene(UIScene):
         self.add_ui_element(back_button)
 
     def go_back(self):
-        from scenes.main_menu import MainMenuScene
+        from softbody_simulation.scenes.main_menu import MainMenu
 
-        SceneManager().switch_scene(MainMenuScene(self.screen))
+        SceneManager().switch_scene(MainMenu(self.screen))
 
     def handle_events(self) -> bool:
         events = pygame.event.get()

@@ -1,8 +1,7 @@
-from enum import Enum
 import pygame
 from abc import ABC, abstractmethod
 from softbody_simulation.consts import BG_COLOR
-from softbody_simulation.ui_elements.ui_element import UIElement
+from softbody_simulation.ui import UIElement
 
 
 class Scene(ABC):
@@ -32,7 +31,7 @@ class UIScene(Scene):
         self.background_color = background_color
         self.ui_elements = []
 
-    def add_ui_element(self, *elements: list[UIElement]):
+    def add_ui_element(self, *elements: UIElement):
         self.ui_elements.extend(elements)
 
     def handle_events(self) -> bool:

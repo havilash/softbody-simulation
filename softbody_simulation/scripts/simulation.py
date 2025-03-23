@@ -2,7 +2,7 @@ import numpy as np
 from softbody_simulation.entities import MassPoint, Spring, PolygonObstacle, GameObject
 
 
-class SimulationScript:
+class Simulation:
     def __init__(self):
         self.mass_points, self.springs = generate_objects(
             pos=(50, 50),

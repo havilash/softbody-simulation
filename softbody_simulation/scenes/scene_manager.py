@@ -1,4 +1,3 @@
-from typing import Self
 from softbody_simulation.consts import FPS
 from softbody_simulation.scenes.scene import Scene
 

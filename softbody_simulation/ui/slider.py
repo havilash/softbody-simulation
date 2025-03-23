@@ -1,8 +1,8 @@
 import pygame
-from .ui_element import UIElement
+from .element import UIElement
 
 
-class UISlider(UIElement):
+class Slider(UIElement):
     def __init__(self, pos, size, vrange=(0, 1), value=0, callback=None):
         self.vrange = vrange
         self.rect = pygame.Rect(*pos, *size)

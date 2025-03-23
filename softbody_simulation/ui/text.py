@@ -1,8 +1,8 @@
 import pygame
-from .ui_element import UIElement
+from .element import UIElement
 
 
-class UIText(UIElement):
+class Text(UIElement):
     def __init__(self, center_pos, text, size=10, font="helvetica", color="black"):
         self.center_pos = center_pos
         self.text = text
