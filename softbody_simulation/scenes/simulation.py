@@ -1,5 +1,5 @@
 import pygame
-from consts import (
+from softbody_simulation.consts import (
     BG_COLOR,
     TRANSPARENT_COLOR,
     TRANSPARENT_HOVER_COLOR,

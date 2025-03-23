@@ -1,7 +1,6 @@
 import pygame
 from typing import List, Optional, Tuple, Set
 import numpy as np
-from consts import WIN_SIZE
 from softbody_simulation.entities import GameObject, MassPoint, Spring, PolygonObstacle
 from softbody_simulation.utils import distance_point_to_line
 

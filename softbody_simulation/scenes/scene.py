@@ -1,7 +1,7 @@
 from enum import Enum
 import pygame
 from abc import ABC, abstractmethod
-from consts import BG_COLOR
+from softbody_simulation.consts import BG_COLOR
 from softbody_simulation.ui_elements.ui_element import UIElement
 
 

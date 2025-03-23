@@ -1,6 +1,5 @@
 import pygame
-import numpy as np
-from consts import (
+from softbody_simulation.consts import (
     BG_COLOR,
     WIN_SIZE,
     FONT,

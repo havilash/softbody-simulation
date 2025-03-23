@@ -1,6 +1,4 @@
-import pygame
 import numpy as np
-from consts import FPS
 from softbody_simulation.entities import MassPoint, Spring, PolygonObstacle, GameObject
 
 

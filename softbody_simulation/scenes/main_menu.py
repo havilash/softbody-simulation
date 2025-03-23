@@ -1,8 +1,8 @@
 import pygame
 from softbody_simulation.scenes.scene import UIScene
-from consts import WIN_SIZE, BG_COLOR, FONT, FONT_COLOR
-from scenes.sandbox import SandboxScene
-from scenes.simulation import SimulationScene
+from softbody_simulation.consts import WIN_SIZE, BG_COLOR, FONT, FONT_COLOR
+from softbody_simulation.scenes.sandbox import SandboxScene
+from softbody_simulation.scenes.simulation import SimulationScene
 from softbody_simulation.scenes.scene_manager import SceneManager
 from softbody_simulation.ui_elements.ui_button import UIButton
 from softbody_simulation.ui_elements.ui_text import UIText

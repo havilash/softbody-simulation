@@ -1,7 +1,7 @@
 import pygame
 from softbody_simulation.scenes.scene import Scene
-from scenes.main_menu import MainMenuScene
-from consts import WIN_SIZE
+from softbody_simulation.scenes.main_menu import MainMenuScene
+from softbody_simulation.consts import WIN_SIZE
 from softbody_simulation.scenes.scene_manager import SceneManager
 
 
