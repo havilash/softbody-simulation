@@ -9,15 +9,10 @@ from softbody_simulation.consts import (
 )
 from softbody_simulation.scenes.scene import UIScene
 from softbody_simulation.scenes.scene_manager import SceneManager
-from softbody_simulation.scripts.sandbox import Sandbox as SandboxScript
+from softbody_simulation.scripts.sandbox import Sandbox as SandboxScript, Mode
 from softbody_simulation.ui import Button, SandboxPanel
 
-
 class Sandbox(UIScene):
-    UI_PANEL_WIDTH = 150
-    UI_PANEL_PADDING = 20
-    UI_ELEMENT_GAP = 50
-
     def __init__(self, screen: pygame.Surface):
         super().__init__(screen, background_color=BG_COLOR)
         self.script = SandboxScript(
@@ -40,23 +35,14 @@ class Sandbox(UIScene):
             callback=self.go_back,
         )
 
-        panel_x = WIN_SIZE[0] - self.UI_PANEL_WIDTH - 10
-        panel_y = 10
-        panel_rect = pygame.Rect(panel_x, panel_y, self.UI_PANEL_WIDTH, 200)
-        
         self.ui_panel = SandboxPanel(
-            rect=panel_rect,
             script=self.script,
-            padding=self.UI_PANEL_PADDING,
-            element_gap=self.UI_ELEMENT_GAP,
-            color="#0a5c9e"
         )
         
         self.ui_elements = [self.back_button, self.ui_panel]
 
     def go_back(self):
         from softbody_simulation.scenes.main_menu import MainMenu
-
         SceneManager().switch_scene(MainMenu(self.screen))
 
     def _is_in_ui_panel(self, pos):
@@ -68,11 +54,9 @@ class Sandbox(UIScene):
             if event.type == pygame.QUIT:
                 return False
 
-            # Process UI elements
             for element in self.ui_elements:
                 element.handle_event(event)
 
-            # Handle gameplay interactions when not interacting with UI
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not self._is_in_ui_panel(event.pos):
                     if event.button == 1 and pygame.key.get_mods() & pygame.KMOD_CTRL:
@@ -84,26 +68,24 @@ class Sandbox(UIScene):
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    self.script.handle_escape_keydown(event.key)
+                    self.script.handle_escape_keydown()
                 elif event.key == pygame.K_SPACE:
-                    self.script.toggle_pause(event.key)
+                    self.script.toggle_pause()
                 elif event.key == pygame.K_RIGHT:
-                    self.script.perform_single_step(event.key)
+                    self.script.perform_single_step()
                 elif event.key == pygame.K_DELETE:
-                    if self.script.is_physics_mode():
-                        self.script.handle_delete()
-                    else:
-                        self.script.delete_selected_obstacles()
+                    self.script.handle_delete_keydown()
                 elif event.key == pygame.K_TAB:
-                    self.script.toggle_mode()
+                    self.script.switch_mode(
+                        Mode.PHYSICS 
+                        if self.script.mode == Mode.OBSTACLE 
+                        else Mode.OBSTACLE
+                    )
 
         return True
 
     def update(self, delta_time) -> None:
-        # Update simulation
         self.script.update(delta_time)
-
-        # Update UI elements
         for element in self.ui_elements:
             element.update()
 
@@ -113,20 +95,20 @@ class Sandbox(UIScene):
         # Draw springs
         for spring in self.script.springs:
             spring.draw(self.screen)
-            if spring in self.script.selected_springs:
+            if spring.selected:
                 p1, p2 = spring.a.pos, spring.b.pos
                 pygame.draw.line(self.screen, (255, 255, 0), p1, p2, 4)
 
         # Draw mass points
         for point in self.script.mass_points:
             point.draw(self.screen)
-            if point in self.script.selected_mass_points:
+            if point.selected:
                 pygame.draw.circle(self.screen, (255, 255, 0), tuple(point.pos), 12, 2)
 
         # Draw obstacles
         for obstacle in self.script.obstacles:
             obstacle.draw(self.screen)
-            if obstacle in self.script.selected_obstacles:
+            if obstacle.selected:
                 points = obstacle.points
                 if len(points) > 0:
                     tuple_points = [tuple(v) for v in points]
@@ -135,7 +117,7 @@ class Sandbox(UIScene):
                         pygame.draw.circle(self.screen, (255, 255, 0), point, 5)
 
         # Draw in-progress obstacle
-        drawing_obstacle, obstacle_points = self.script.get_obstacle_drawing_state()
+        drawing_obstacle, obstacle_points = self.script.drawing_obstacle, self.script.drawing_obstacle_points
         if drawing_obstacle and len(obstacle_points) > 0:
             tuple_points = [tuple(p) for p in obstacle_points]
             if len(tuple_points) > 1:

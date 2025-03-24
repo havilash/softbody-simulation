@@ -21,13 +21,11 @@ class Simulation:
         ]
 
     def update(self, delta_time: float) -> None:
-        GameObject.set_delta_time(delta_time)
-
         for spring in self.springs:
-            spring.update()
+            spring.update(delta_time)
         for mass_point in self.mass_points:
             others = [m for m in self.mass_points if m != mass_point]
-            mass_point.update(self.obstacles, others)
+            mass_point.update(delta_time, self.obstacles, others)
 
 
 def generate_objects(pos, size, spacing, mass_point_kwargs, spring_kwargs):

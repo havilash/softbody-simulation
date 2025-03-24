@@ -6,7 +6,7 @@ class Panel(UIElement):
     A container UI element that can group and manage other UI elements.
     The panel provides a background and manages contained elements.
     """
-    def __init__(self, rect, color="#0a5c9e", border_radius=0, border_width=0, border_color=(255, 255, 255)):
+    def __init__(self, rect, color="#0a5c9e", padding=0, border_radius=0, border_width=0, border_color=(255, 255, 255)):
         """
         Initialize a new UI panel.
         
@@ -19,6 +19,7 @@ class Panel(UIElement):
         """
         self.rect = rect
         self.color = color
+        self.padding = padding
         self.border_radius = border_radius
         self.border_width = border_width
         self.border_color = border_color
@@ -89,3 +90,22 @@ class Panel(UIElement):
         # Draw all contained elements
         for element in self.elements:
             element.draw(screen)
+
+    def update_boundary_box(self):
+        if not self.elements:
+            return
+
+        pad = self.padding
+
+        # Assume each UIElement has a 'rect' attribute.
+        min_x = min(e.rect.left for e in self.elements if hasattr(e, 'rect'))
+        min_y = min(e.rect.top for e in self.elements if hasattr(e, 'rect'))
+        max_x = max(e.rect.right for e in self.elements if hasattr(e, 'rect'))
+        max_y = max(e.rect.bottom for e in self.elements if hasattr(e, 'rect'))
+
+        self.rect = pygame.Rect(
+            min_x - pad,
+            min_y - pad,
+            (max_x - min_x) + 2 * pad,
+            (max_y - min_y) + 2 * pad
+        )

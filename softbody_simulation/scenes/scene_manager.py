@@ -33,7 +33,8 @@ class SceneManager(Singleton):
         while running:
             clock.tick(FPS)
             current_fps = clock.get_fps()
-            delta_time = current_fps if current_fps > 0 else FPS
+            current_fps = current_fps if current_fps > 0 else FPS
+            delta_time = 1 / current_fps
 
             if not self.current_scene.handle_events():
                 running = False
