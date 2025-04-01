@@ -74,11 +74,9 @@ class MassPoint(GameObject):
     def obstacle_collision(self, obstacles):
         for obstacle in obstacles:
             # if pixel_collide(self, obstacle):
-            if isinstance(obstacle, PolygonObstacle):
-                for i in range(len(obstacle.points) - 1):
-                    line = obstacle.points[i], obstacle.points[i + 1]
-                    if distance_point_to_line(self.pos, line) <= self.RADIUS + 1:
-                        self.reflect(line)
+            colliding_edge = obstacle.get_colliding_edge(self.pos, threshold=self.RADIUS)
+            if colliding_edge:
+                self.reflect(colliding_edge)
 
     def boundary_collision(self):
         if self.pos[0] - self.RADIUS <= 0:

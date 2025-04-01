@@ -1,7 +1,8 @@
 import pygame
 import numpy as np
 from enum import Enum
-from softbody_simulation.entities import GameObject, MassPoint, Spring, PolygonObstacle
+from softbody_simulation.consts import DRAG_THRESHOLD_MS
+from softbody_simulation.entities import MassPoint, Spring, PolygonObstacle
 from softbody_simulation.utils import distance_point_to_line
 
 class Selection(Enum):
@@ -39,6 +40,10 @@ class Sandbox:
 
         self.drawing_obstacle = False
         self.drawing_obstacle_points = []
+
+        self.drag_time = None
+        self.drag_initial_mouse = None
+        self.drag_initial_positions = {}
 
         self.mode = Mode.PHYSICS
 
@@ -94,6 +99,10 @@ class Sandbox:
 
     # Simulation input functions
     def handle_ctrl_left_click(self, mouse_pos) -> None:
+        self.drag_time = None
+        self.drag_initial_mouse = None
+        self.drag_initial_positions = {}
+
         if not self.mode == Mode.PHYSICS:
             return
 
@@ -110,13 +119,17 @@ class Sandbox:
             return
 
     def handle_left_click(self, mouse_pos) -> None:
+        self.drag_time = None
+        self.drag_initial_mouse = None
+        self.drag_initial_positions = {}
+
         match self.mode:
             case Mode.PHYSICS:
-                self._handle_physics_left_click(mouse_pos)
+                self._handle_physics_mode_left_click(mouse_pos)
             case Mode.OBSTACLE:
-                self._handle_obstacle_left_click(mouse_pos)
+                self._handle_obstacle_mode_left_click(mouse_pos)
 
-    def _handle_physics_left_click(self, mouse_pos) -> None:
+    def _handle_physics_mode_left_click(self, mouse_pos) -> None:
         mass_point = self._get_mass_point_at(mouse_pos)
         if mass_point:
             self._handle_left_click_mass_point(mass_point)
@@ -129,8 +142,14 @@ class Sandbox:
 
         self.clear_all_selections()
 
-    def _handle_obstacle_left_click(self, mouse_pos) -> None:
+    def _handle_obstacle_mode_left_click(self, mouse_pos) -> None:
         if self.drawing_obstacle:
+            if len(self.drawing_obstacle_points) >= 3:
+                distance = np.linalg.norm(mouse_pos - self.drawing_obstacle_points[0])
+                if distance < 10:
+                    self.complete_obstacle()
+                    return
+
             self.drawing_obstacle_points.append(np.array(mouse_pos))
         else:
             obstacle = self._get_obstacle_at(mouse_pos)
@@ -139,15 +158,17 @@ class Sandbox:
                     p.selected = False
                 for s in self.springs:
                     s.selected = False
-
                 for obs in self.obstacles:
                     obs.selected = False
+
                 obstacle.selected = True
             else:
                 self.drawing_obstacle = True
                 self.drawing_obstacle_points = [np.array(mouse_pos)]
 
     def _handle_left_click_mass_point(self, mass_point) -> None:
+        self.drag_time = pygame.time.get_ticks()
+
         for spring in self.springs:
             spring.selected = False
         for obs in self.obstacles:
@@ -174,6 +195,8 @@ class Sandbox:
         else:
             mass_point.selected = True
 
+        self.drag_initial_positions = {p: p.pos.copy() for p in selected_mass_points}
+
         self._update_selection()
 
     def _handle_left_click_spring(self, spring) -> None:
@@ -192,29 +215,33 @@ class Sandbox:
 
         self._update_selection()
 
-    def _handle_left_click_obstacle(self, obstacle) -> None:
-        # Deselect masses and springs
-        for p in self.mass_points:
-            p.selected = False
-        for s in self.springs:
-            s.selected = False
-
-        # Toggle obstacle selection: if already selected, do nothing; else select it exclusively.
-        if not obstacle.selected:
-            for obs in self.obstacles:
-                obs.selected = False
-            obstacle.selected = True
-
     def handle_right_click(self, mouse_pos) -> None:
-        """Handle right click in current mode."""
         if self.mode == Mode.PHYSICS:
-            # Create a new mass point (ensure its selected flag is False)
             new_point = MassPoint(np.array(mouse_pos), self.default_mass)
             new_point.selected = False
             self.mass_points.append(new_point)
-        else:  # Obstacle mode
+        else:
             if self.drawing_obstacle and len(self.drawing_obstacle_points) >= 3:
                 self.complete_obstacle()
+
+    def handle_left_click_motion(self, mouse_pos) -> None:
+        if self.drag_time is None:
+            return
+
+        if self.drag_initial_mouse is None:
+            self.drag_initial_mouse = mouse_pos
+            selected_mass_points = [p for p in self.mass_points if p.selected]
+            self.drag_initial_positions = {p: p.pos.copy() for p in selected_mass_points}
+
+        current_time = pygame.time.get_ticks()
+        if current_time - self.drag_time < DRAG_THRESHOLD_MS:
+            return
+
+        current_mouse = np.array(mouse_pos)
+        delta = current_mouse - self.drag_initial_mouse
+
+        for mass_point, initial_pos in self.drag_initial_positions.items():
+            mass_point.pos = initial_pos + delta
 
     def clear_all_selections(self) -> None:
         for p in self.mass_points:
@@ -280,9 +307,7 @@ class Sandbox:
 
     def _get_obstacle_at(self, pos, threshold: int = 10) -> PolygonObstacle | None:
         for obstacle in self.obstacles:
-            if obstacle.contains_point(np.array(pos)) or obstacle.near_boundary(
-                np.array(pos), threshold
-            ):
+            if obstacle.contains_point(np.array(pos), threshold):
                 return obstacle
         return None
 

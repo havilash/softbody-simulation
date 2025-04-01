@@ -82,6 +82,10 @@ class Sandbox(UIScene):
                         else Mode.OBSTACLE
                     )
 
+        if pygame.mouse.get_pressed()[0]:
+            self.script.handle_left_click_motion(pygame.mouse.get_pos())
+
+
         return True
 
     def update(self, delta_time) -> None:

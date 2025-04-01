@@ -1,5 +1,4 @@
 import pygame
-import numpy as np
 
 from .game_object import GameObject
 from softbody_simulation.consts import *
@@ -32,50 +31,37 @@ class PolygonObstacle(GameObject):
                 for point in tuple_points:
                     pygame.draw.circle(win, (255, 255, 0), point, 5)
 
-    def contains_point(self, point):
-        """
-        Check if a point is inside the polygon using ray casting algorithm.
-        """
+    def contains_point(self, point, threshold=0):
         if len(self.points) < 3:
             return False
 
         inside = False
         n = len(self.points)
 
+        tx, ty = point
         p1x, p1y = self.points[0]
-        for i in range(n + 1):
+
+        for i in range(1, n + 1):
             p2x, p2y = self.points[i % n]
 
-            if point[1] > min(p1y, p2y):
-                if point[1] <= max(p1y, p2y):
-                    if point[0] <= max(p1x, p2x):
-                        if p1y != p2y:
-                            x_intersect = (point[1] - p1y) * (p2x - p1x) / (
-                                p2y - p1y
-                            ) + p1x
-                        if p1x == p2x or point[0] <= x_intersect:
-                            inside = not inside
+            min_y, max_y = min(p1y, p2y) - threshold, max(p1y, p2y) + threshold
+            max_x = max(p1x, p2x) + threshold
+
+            if min_y < ty <= max_y and tx <= max_x:
+                if p1y != p2y:  # Avoid division by zero
+                    x_intersect = (ty - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or tx <= x_intersect + threshold:
+                        inside = not inside
+
             p1x, p1y = p2x, p2y
 
         return inside
 
-    def near_boundary(self, point, threshold=5):
-        """
-        Check if a point is near the boundary of the polygon.
-        """
-        if len(self.points) < 2:
-            return False
-
+    def get_colliding_edge(self, point, threshold):
         n = len(self.points)
-
         for i in range(n):
             p1 = self.points[i]
             p2 = self.points[(i + 1) % n]
-
-            # Calculate distance from point to line segment
-            dist = distance_point_to_line(point, (p1, p2))
-
-            if dist <= threshold:
-                return True
-
-        return False
+            if distance_point_to_line(point, (p1, p2)) <= threshold:
+                return (p1, p2)
+        return None
