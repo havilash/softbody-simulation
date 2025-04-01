@@ -12,8 +12,8 @@ TRANSPARENT_HOVER_COLOR = "#303947"
 FONT_COLOR = WHITE
 
 PROJECT_PATH = "softbody_simulation"
-FONTS_PATH = "fonts"
-FONT = os.path.join(PROJECT_PATH, FONTS_PATH, "minecraft.ttf")
+ASSETS_PATH = "assets"
+FONT = os.path.join(PROJECT_PATH, ASSETS_PATH, "minecraft.ttf")
 
 FPS = 60
 WIN_SIZE = 800, 600
