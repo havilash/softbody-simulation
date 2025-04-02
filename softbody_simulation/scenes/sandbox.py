@@ -66,6 +66,11 @@ class Sandbox(UIScene):
                     elif event.button == 3:
                         self.script.handle_right_click(event.pos)
 
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if not self._is_in_ui_panel(event.pos):
+                    if event.button == 1:
+                        self.script.handle_left_click_release(event.pos)
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.script.handle_escape_keydown()
@@ -83,7 +88,7 @@ class Sandbox(UIScene):
                     )
 
         if pygame.mouse.get_pressed()[0]:
-            self.script.handle_left_click_motion(pygame.mouse.get_pos())
+            self.script.handle_left_click_hold(pygame.mouse.get_pos())
 
 
         return True
