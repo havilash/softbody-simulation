@@ -106,19 +106,26 @@ class Sandbox:
     # Event
     def handle_ctrl_left_click(self, mouse_pos) -> None:
         self._reset_drag_state()
-        if self.mode != Mode.PHYSICS:
-            return
 
-        mass_point = self._get_mass_point_at(mouse_pos)
-        if mass_point:
-            mass_point.selected = not mass_point.selected
-            self._update_selection()
-            return
+        match self.mode:
+            case Mode.PHYSICS:
+                mass_point = self._get_mass_point_at(mouse_pos)
+                if mass_point:
+                    mass_point.selected = not mass_point.selected
+                    self._update_selection()
+                    return
 
-        spring = self._get_spring_at(mouse_pos)
-        if spring:
-            spring.selected = not spring.selected
-            self._update_selection()
+                spring = self._get_spring_at(mouse_pos)
+                if spring:
+                    spring.selected = not spring.selected
+                    self._update_selection()
+
+            case Mode.OBSTACLE:
+                obstacle = self._get_obstacle_at(mouse_pos)
+                if obstacle:
+                    print(obstacle.pos)
+                    obstacle.selected = not obstacle.selected
+                    self._update_selection()
 
     def handle_left_click(self, mouse_pos) -> None:
         self.drag_time = pygame.time.get_ticks()
@@ -310,7 +317,7 @@ class Sandbox:
     def _get_obstacle_at(self, pos, threshold: int = 10) -> PolygonObstacle | None:
         pos = np.array(pos)
         for obstacle in self.obstacles:
-            if obstacle.contains_point(pos, threshold):
+            if obstacle.contains_point(pos) or obstacle.near_boundary(pos, threshold):
                 return obstacle
         return None
 

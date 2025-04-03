@@ -57,6 +57,20 @@ class PolygonObstacle(GameObject):
 
         return inside
 
+    def near_boundary(self, point, threshold=5):
+        if len(self.points) < 2:
+            return False
+
+        n = len(self.points)
+        for i in range(n):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % n]
+
+            dist = distance_point_to_line(point, (p1, p2))
+            if dist <= threshold:
+                return True
+        return False
+
     def get_colliding_edge(self, point, threshold):
         n = len(self.points)
         for i in range(n):
