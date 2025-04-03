@@ -94,13 +94,21 @@ class MassPoint(GameObject):
             self.velocity[1] = -self.velocity[1]
 
     def reflect(self, line):
-        line_dir = line[1] - line[0]
-        normal_vector = np.array((-line_dir[1], line_dir[0]))
+        p1, p2 = line
+        edge_dir = p2 - p1
 
-        reflection_vector = to_pygame_vector(self.velocity).reflect(
-            to_ndarray(normal_vector)
-        )
+        norm = np.linalg.norm(edge_dir)
+        if norm == 0:
+            return
+        normal = -np.array([-edge_dir[1], edge_dir[0]]) / norm
 
-        reflection_vector = np.array(list(reflection_vector))
+        dist = distance_point_to_line(self.pos, line)
+        penetration = self.RADIUS - dist
 
-        self.velocity = reflection_vector * self.BOUNCINESS
+        if penetration > 0:
+            self.pos += normal * (penetration + 1e-3)
+
+        v_dot_n = np.dot(self.velocity, normal)
+        if v_dot_n < 0:
+            self.velocity = self.velocity - 2 * v_dot_n * normal
+            self.velocity *= self.BOUNCINESS

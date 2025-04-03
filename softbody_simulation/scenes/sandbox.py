@@ -7,6 +7,7 @@ from softbody_simulation.consts import (
     TRANSPARENT_COLOR,
     TRANSPARENT_HOVER_COLOR,
 )
+import numpy as np
 from softbody_simulation.scenes.scene import UIScene
 from softbody_simulation.scenes.scene_manager import SceneManager
 from softbody_simulation.scripts.sandbox import Sandbox as SandboxScript, Mode
@@ -104,26 +105,14 @@ class Sandbox(UIScene):
         # Draw springs
         for spring in self.script.springs:
             spring.draw(self.screen)
-            if spring.selected:
-                p1, p2 = spring.a.pos, spring.b.pos
-                pygame.draw.line(self.screen, (255, 255, 0), p1, p2, 4)
 
         # Draw mass points
         for point in self.script.mass_points:
             point.draw(self.screen)
-            if point.selected:
-                pygame.draw.circle(self.screen, (255, 255, 0), tuple(point.pos), 12, 2)
 
         # Draw obstacles
         for obstacle in self.script.obstacles:
             obstacle.draw(self.screen)
-            if obstacle.selected:
-                points = obstacle.points
-                if len(points) > 0:
-                    tuple_points = [tuple(v) for v in points]
-                    pygame.draw.lines(self.screen, (255, 255, 0), True, tuple_points, 3)
-                    for point in tuple_points:
-                        pygame.draw.circle(self.screen, (255, 255, 0), point, 5)
 
         # Draw in-progress obstacle
         drawing_obstacle, obstacle_points = self.script.drawing_obstacle, self.script.drawing_obstacle_points
