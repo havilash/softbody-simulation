@@ -111,19 +111,24 @@ class Sandbox:
             case Mode.PHYSICS:
                 mass_point = self._get_mass_point_at(mouse_pos)
                 if mass_point:
+                    self._deselect_all(self.springs)
+                    self._deselect_all(self.obstacles)
                     mass_point.selected = not mass_point.selected
                     self._update_selection()
                     return
 
                 spring = self._get_spring_at(mouse_pos)
                 if spring:
+                    self._deselect_all(self.mass_points)
+                    self._deselect_all(self.obstacles)
                     spring.selected = not spring.selected
                     self._update_selection()
 
             case Mode.OBSTACLE:
                 obstacle = self._get_obstacle_at(mouse_pos)
                 if obstacle:
-                    print(obstacle.pos)
+                    self._deselect_all(self.mass_points)
+                    self._deselect_all(self.spring)
                     obstacle.selected = not obstacle.selected
                     self._update_selection()
 
