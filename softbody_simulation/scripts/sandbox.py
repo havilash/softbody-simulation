@@ -128,7 +128,7 @@ class Sandbox:
                 obstacle = self._get_obstacle_at(mouse_pos)
                 if obstacle:
                     self._deselect_all(self.mass_points)
-                    self._deselect_all(self.spring)
+                    self._deselect_all(self.springs)
                     obstacle.selected = not obstacle.selected
                     self._update_selection()
 
