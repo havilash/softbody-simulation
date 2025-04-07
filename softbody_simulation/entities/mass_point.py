@@ -20,7 +20,7 @@ class MassPoint(GameObject):
         use_gravity=True,
         damping=0,
     ):
-        self.pos = pos
+        self.pos = pos.astype(np.float64)
         self.initial_pos = pos
         self.velocity = velocity
         self.initial_velocity = velocity
