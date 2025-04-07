@@ -30,6 +30,7 @@ class Sandbox:
         self.default_stiffness = default_stiffness
         self.default_rest_length = default_rest_length
         self.default_damping = default_damping
+        self.use_gravity = True
 
         self.mass_points: list[MassPoint] = []
         self.springs: list[Spring] = []
@@ -104,6 +105,49 @@ class Sandbox:
             self.single_step = True
 
     # Event
+    def toggle_gravity(self) -> None:
+        self.use_gravity = not self.use_gravity
+        for p in self.mass_points:
+            p.use_gravity = self.use_gravity
+
+    def reset_simulation(self) -> None:
+        self._clear_all_selections()
+        self.mass_points.clear()
+        self.springs.clear()
+        self.obstacles.clear()
+
+    def handle_double_click(self, mouse_pos) -> None:
+
+        self._reset_drag_state()
+
+        match self.mode:
+            case Mode.PHYSICS:
+                mass_point = self._get_mass_point_at(mouse_pos)
+                if mass_point:
+                    self._deselect_all(self.springs)
+                    self._deselect_all(self.obstacles)
+                    for p in self.mass_points:
+                        p.selected = True
+                    self._update_selection()
+                    return
+
+                spring = self._get_spring_at(mouse_pos)
+                if spring:
+                    self._deselect_all(self.mass_points)
+                    self._deselect_all(self.obstacles)
+                    for p in self.springs:
+                        p.selected = True
+                    self._update_selection()
+
+            case Mode.OBSTACLE:
+                obstacle = self._get_obstacle_at(mouse_pos)
+                if obstacle:
+                    self._deselect_all(self.mass_points)
+                    self._deselect_all(self.springs)
+                    for p in self.obstacles:
+                        p.selected = True
+                    self._update_selection()
+
     def handle_ctrl_left_click(self, mouse_pos) -> None:
         self._reset_drag_state()
 
@@ -180,7 +224,7 @@ class Sandbox:
 
     def handle_right_click(self, mouse_pos) -> None:
         if self.mode == Mode.PHYSICS:
-            new_point = MassPoint(np.array(mouse_pos), self.default_mass)
+            new_point = MassPoint(np.array(mouse_pos), self.default_mass, use_gravity=self.use_gravity)
             new_point.selected = False
             self.mass_points.append(new_point)
         elif self.drawing_obstacle and len(self.drawing_obstacle_points) >= 3:

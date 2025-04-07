@@ -42,6 +42,8 @@ class Sandbox(UIScene):
         
         self.ui_elements = [self.back_button, self.ui_panel]
 
+        self.last_click_time = 0
+
     def go_back(self):
         from softbody_simulation.scenes.main_menu import MainMenu
         SceneManager().switch_scene(MainMenu(self.screen))
@@ -59,13 +61,20 @@ class Sandbox(UIScene):
                 element.handle_event(event)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
+                current_time = pygame.time.get_ticks()
+
                 if not self._is_in_ui_panel(event.pos):
                     if event.button == 1 and pygame.key.get_mods() & pygame.KMOD_CTRL:
                         self.script.handle_ctrl_left_click(event.pos)
                     elif event.button == 1:
-                        self.script.handle_left_click(event.pos)
+                        if current_time - self.last_click_time < 200:
+                            self.script.handle_double_click(event.pos)
+                        else:
+                            self.script.handle_left_click(event.pos)
                     elif event.button == 3:
                         self.script.handle_right_click(event.pos)
+
+                self.last_click_time = current_time
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if not self._is_in_ui_panel(event.pos):
@@ -87,6 +96,10 @@ class Sandbox(UIScene):
                         if self.script.mode == Mode.OBSTACLE 
                         else Mode.OBSTACLE
                     )
+                elif event.key == pygame.K_r:
+                    self.script.reset_simulation()
+                elif event.key == pygame.K_g:
+                    self.script.toggle_gravity()
 
         if pygame.mouse.get_pressed()[0]:
             self.script.handle_left_click_hold(pygame.mouse.get_pos())
