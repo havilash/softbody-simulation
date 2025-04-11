@@ -75,21 +75,19 @@ class SandboxPanel(Panel):
         selected_springs = [s for s in self.script.springs if s.selected]
 
         if selected_mass_points or self.script.selection == Selection.MASS_POINT:
+            # If a mass is selected, use its value; otherwise fallback on the sandbox default.
             mass_value = selected_mass_points[0].mass if selected_mass_points else self.script.default_mass
-            if self.script.selection == Selection.MASS_POINT:
-                ui_configs.append(("Mass", (1, 200), mass_value, self.script.update_mass))
+            ui_configs.append(("Mass", (1, 200), mass_value, self.script.update_mass))
 
         if selected_springs or self.script.selection == Selection.SPRING:
             stiffness = selected_springs[0].stiffness if selected_springs else self.script.default_stiffness
             rest_length = selected_springs[0].rest_length if selected_springs else self.script.default_rest_length
             damping = selected_springs[0].damping if selected_springs else self.script.default_damping
-
-            if self.script.selection == Selection.SPRING:
-                ui_configs.extend([
-                    ("Stiffness", (0, 300), stiffness, self.script.update_stiffness),
-                    ("Rest Length", (0, 300), rest_length, self.script.update_rest_length),
-                    ("Damping", (0, 100), damping, self.script.update_damping),
-                ])
+            ui_configs.extend([
+               ("Stiffness", (0, 300), stiffness, self.script.update_stiffness),
+               ("Rest Length", (0, 300), rest_length, self.script.update_rest_length),
+               ("Damping", (0, 100), damping, self.script.update_damping),
+            ])
 
         base_y = self._add_selection_summary(elements, base_x, base_y, selected_mass_points, selected_springs)
         self._add_sliders(elements, base_x, base_y, ui_configs)
@@ -138,6 +136,9 @@ class SandboxPanel(Panel):
             "Right arrow - Step",
             "Space - Pause",
             "ESC - Cancel",
+            "TAB - Switch mode",
+            "R - Reset simulation",
+            "G - Toggle gravity",
         ]
 
         for idx, line in enumerate(controls):
@@ -163,6 +164,9 @@ class SandboxPanel(Panel):
             "Right arrow - Step",
             "Space - Pause",
             "ESC - Cancel",
+            "TAB - Switch mode",
+            "R - Reset simulation",
+            "G - Toggle gravity",
         ]
 
         for idx, hint in enumerate(hints):

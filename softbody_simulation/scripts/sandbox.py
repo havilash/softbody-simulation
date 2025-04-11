@@ -19,13 +19,8 @@ class Mode(Enum):
 
 
 class Sandbox:
-    def __init__(
-        self,
-        default_mass: float,
-        default_stiffness: float,
-        default_rest_length: float,
-        default_damping: float,
-    ):
+    def __init__(self, default_mass: float, default_stiffness: float,
+                 default_rest_length: float, default_damping: float):
         self.default_mass = default_mass
         self.default_stiffness = default_stiffness
         self.default_rest_length = default_rest_length
@@ -37,6 +32,7 @@ class Sandbox:
         self.obstacles: list[PolygonObstacle] = []
 
         self.selection = Selection.NONE
+        self.mode = Mode.PHYSICS
 
         self.paused = False
         self.single_step = False
@@ -48,31 +44,86 @@ class Sandbox:
         self.drag_initial_mouse = None
         self.drag_initial_positions = {}
 
-        self.mode = Mode.PHYSICS
+    # --- Helper Functions for Selection Operations ---
+    def _deselect_all(self, items: list) -> None:
+        for item in items:
+            item.selected = False
 
+    def _clear_all_selections(self) -> None:
+        self._deselect_all(self.mass_points)
+        self._deselect_all(self.springs)
+        self._deselect_all(self.obstacles)
+        self.selection = Selection.NONE
+
+    def _update_defaults_for_item(self, item) -> None:
+        if isinstance(item, MassPoint):
+            self.default_mass = item.mass
+            self.selection = Selection.MASS_POINT
+        elif isinstance(item, Spring):
+            self.default_stiffness = item.stiffness
+            self.default_rest_length = item.rest_length
+            self.default_damping = item.damping
+            self.selection = Selection.SPRING
+        elif isinstance(item, PolygonObstacle):
+            self.selection = Selection.OBSTACLE
+
+    def _select_item(self, item) -> None:
+        if isinstance(item, MassPoint):
+            self._deselect_all(self.springs)
+            self._deselect_all(self.obstacles)
+        elif isinstance(item, Spring):
+            self._deselect_all(self.mass_points)
+            self._deselect_all(self.obstacles)
+        elif isinstance(item, PolygonObstacle):
+            self._deselect_all(self.mass_points)
+            self._deselect_all(self.springs)
+        item.selected = True
+        self._update_defaults_for_item(item)
+
+    def _toggle_item_selection(self, item) -> None:
+        if isinstance(item, MassPoint):
+            self._deselect_all(self.springs)
+            self._deselect_all(self.obstacles)
+        elif isinstance(item, Spring):
+            self._deselect_all(self.mass_points)
+            self._deselect_all(self.obstacles)
+        elif isinstance(item, PolygonObstacle):
+            self._deselect_all(self.mass_points)
+            self._deselect_all(self.springs)
+        item.selected = not item.selected
+        if item.selected:
+            self._update_defaults_for_item(item)
+    
+    # --- Helper Functions for Dragging ---
+    def _start_drag(self, mouse_pos) -> None:
+        self.drag_time = pygame.time.get_ticks()
+        self.drag_initial_mouse = mouse_pos
+        self.drag_initial_positions.clear()
+
+    def _update_drag(self, current_pos) -> None:
+        delta = np.array(current_pos) - np.array(self.drag_initial_mouse)
+        for item, initial in self.drag_initial_positions.items():
+            item.pos = initial + delta
+
+    def _end_drag(self) -> None:
+        self.drag_time = None
+        self.drag_initial_mouse = None
+        self.drag_initial_positions.clear()
+
+    # --- Mode Switching and Reset ---
     def switch_mode(self, mode: Mode):
         self._clear_all_selections()
         self.drawing_obstacle = False
         self.drawing_obstacle_points = []
         self.mode = mode
 
-    def _clear_all_selections(self) -> None:
-        for group in (self.mass_points, self.springs, self.obstacles):
-            for item in group:
-                item.selected = False
-        self._update_selection()
+    def reset_simulation(self) -> None:
+        self._clear_all_selections()
+        self.mass_points.clear()
+        self.springs.clear()
+        self.obstacles.clear()
 
-    def _update_selection(self):
-        if any(s.selected for s in self.springs):
-            self.selection = Selection.SPRING
-        elif any(p.selected for p in self.mass_points):
-            self.selection = Selection.MASS_POINT
-        elif any(o.selected for o in self.obstacles):
-            self.selection = Selection.OBSTACLE
-        else:
-            self.selection = Selection.NONE
-
-    # UI
+    # --- Slider Callbacks ---
     def update_mass(self, value: float) -> None:
         self.default_mass = value
         for p in self.mass_points:
@@ -104,138 +155,104 @@ class Sandbox:
         if self.paused:
             self.single_step = True
 
-    # Event
+    # --- Event Handler Methods ---
     def toggle_gravity(self) -> None:
         self.use_gravity = not self.use_gravity
         for p in self.mass_points:
             p.use_gravity = self.use_gravity
 
-    def reset_simulation(self) -> None:
-        self._clear_all_selections()
-        self.mass_points.clear()
-        self.springs.clear()
-        self.obstacles.clear()
-
     def handle_double_click(self, mouse_pos) -> None:
+        self._end_drag()
+        if self.mode == Mode.PHYSICS:
+            mass_point = self._get_mass_point_at(mouse_pos)
+            if mass_point:
+                self._deselect_all(self.springs)
+                self._deselect_all(self.obstacles)
+                for p in self.mass_points:
+                    p.selected = True
+                self.selection = Selection.MASS_POINT
+                self.default_mass = mass_point.mass
+                return
+            spring = self._get_spring_at(mouse_pos)
+            if spring:
+                self._deselect_all(self.mass_points)
+                self._deselect_all(self.obstacles)
+                for s in self.springs:
+                    s.selected = True
+                self.selection = Selection.SPRING
+                self.default_stiffness = spring.stiffness
+                self.default_rest_length = spring.rest_length
+                self.default_damping = spring.damping
+        elif self.mode == Mode.OBSTACLE:
+            obstacle = self._get_obstacle_at(mouse_pos)
+            if obstacle:
+                self._deselect_all(self.mass_points)
+                self._deselect_all(self.springs)
+                for o in self.obstacles:
+                    o.selected = True
+                self.selection = Selection.OBSTACLE
 
-        self._reset_drag_state()
+    def handle_ctrl_click(self, mouse_pos) -> None:
+        self._end_drag()
+        if self.mode == Mode.PHYSICS:
+            mass_point = self._get_mass_point_at(mouse_pos)
+            if mass_point:
+                self._toggle_item_selection(mass_point)
+                return
+            spring = self._get_spring_at(mouse_pos)
+            if spring:
+                self._toggle_item_selection(spring)
+                return
+        elif self.mode == Mode.OBSTACLE:
+            obstacle = self._get_obstacle_at(mouse_pos)
+            if obstacle:
+                self._toggle_item_selection(obstacle)
+                return
 
-        match self.mode:
-            case Mode.PHYSICS:
-                mass_point = self._get_mass_point_at(mouse_pos)
-                if mass_point:
-                    self._deselect_all(self.springs)
-                    self._deselect_all(self.obstacles)
-                    for p in self.mass_points:
-                        p.selected = True
-                    self._update_selection()
-                    return
-
-                spring = self._get_spring_at(mouse_pos)
-                if spring:
-                    self._deselect_all(self.mass_points)
-                    self._deselect_all(self.obstacles)
-                    for p in self.springs:
-                        p.selected = True
-                    self._update_selection()
-
-            case Mode.OBSTACLE:
-                obstacle = self._get_obstacle_at(mouse_pos)
-                if obstacle:
-                    self._deselect_all(self.mass_points)
-                    self._deselect_all(self.springs)
-                    for p in self.obstacles:
-                        p.selected = True
-                    self._update_selection()
-
-    def handle_ctrl_left_click(self, mouse_pos) -> None:
-        self._reset_drag_state()
-
-        match self.mode:
-            case Mode.PHYSICS:
-                mass_point = self._get_mass_point_at(mouse_pos)
-                if mass_point:
-                    self._deselect_all(self.springs)
-                    self._deselect_all(self.obstacles)
-                    mass_point.selected = not mass_point.selected
-                    self._update_selection()
-                    return
-
-                spring = self._get_spring_at(mouse_pos)
-                if spring:
-                    self._deselect_all(self.mass_points)
-                    self._deselect_all(self.obstacles)
-                    spring.selected = not spring.selected
-                    self._update_selection()
-
-            case Mode.OBSTACLE:
-                obstacle = self._get_obstacle_at(mouse_pos)
-                if obstacle:
-                    self._deselect_all(self.mass_points)
-                    self._deselect_all(self.springs)
-                    obstacle.selected = not obstacle.selected
-                    self._update_selection()
-
-    def handle_left_click(self, mouse_pos) -> None:
-        self.drag_time = pygame.time.get_ticks()
-        self.drag_initial_mouse = None
-        self.drag_initial_positions = {}
-
+    def handle_left_mouse_down(self, mouse_pos) -> None:
+        self._start_drag(mouse_pos)
         if self.mode == Mode.OBSTACLE:
-            self._handle_obstacle_mode_left_click(mouse_pos)
-            self._reset_drag_state()
+            self._handle_obstacle_click(mouse_pos)
+            self._end_drag()
 
-    def handle_left_click_release(self, mouse_pos) -> None:
+    def handle_left_mouse_up(self, mouse_pos) -> None:
         if self.drag_time is None:
             return
-
         current_time = pygame.time.get_ticks()
-        # If it was a short click in PHYSICS mode, process it as a click.
         if self.mode == Mode.PHYSICS and current_time - self.drag_time < DRAG_THRESHOLD_MS:
             self._process_physics_click(mouse_pos)
+        self._end_drag()
 
-        self._reset_drag_state()
-
-    def handle_left_click_hold(self, mouse_pos) -> None:
+    def handle_mouse_drag(self, mouse_pos) -> None:
         if self.drag_time is None:
             return
-
         current_time = pygame.time.get_ticks()
         if current_time - self.drag_time < DRAG_THRESHOLD_MS:
             return
-
         if self.drag_initial_mouse is None:
             self.drag_initial_mouse = mouse_pos
-            self.drag_initial_positions = {}
-
             mass_point = self._get_mass_point_at(mouse_pos)
             if mass_point:
-                mass_point.selected = True
-
-            selected_mass_points = [p for p in self.mass_points if p.selected]
-            for p in selected_mass_points:
+                self._select_item(mass_point)
+            for p in (p for p in self.mass_points if p.selected):
                 self.drag_initial_positions[p] = p.pos.copy()
+        self._update_drag(mouse_pos)
 
-        current_mouse = np.array(mouse_pos)
-        delta = current_mouse - np.array(self.drag_initial_mouse)
-
-        for item, initial in self.drag_initial_positions.items():
-            item.pos = initial + delta
-
-    def handle_right_click(self, mouse_pos) -> None:
+    def handle_right_mouse_click(self, mouse_pos) -> None:
         if self.mode == Mode.PHYSICS:
-            new_point = MassPoint(np.array(mouse_pos), self.default_mass, use_gravity=self.use_gravity)
+            new_point = MassPoint(np.array(mouse_pos), self.default_mass,
+                                  use_gravity=self.use_gravity)
             new_point.selected = False
             self.mass_points.append(new_point)
         elif self.drawing_obstacle and len(self.drawing_obstacle_points) >= 3:
             self.complete_obstacle()
 
-    def handle_escape_keydown(self) -> None:
+    def handle_escape(self) -> None:
         self.drawing_obstacle = False
         self.drawing_obstacle_points = []
         self._clear_all_selections()
 
-    def handle_delete_keydown(self):
+    def handle_delete(self) -> None:
         if self.selection == Selection.MASS_POINT:
             selected = [p for p in self.mass_points if p.selected]
             for p in selected:
@@ -249,73 +266,60 @@ class Sandbox:
             for o in [o for o in self.obstacles if o.selected]:
                 if o in self.obstacles:
                     self.obstacles.remove(o)
-        self._update_selection()
+        self.selection = Selection.NONE
 
+    # --- Processing Clicks ---
     def _process_physics_click(self, mouse_pos) -> None:
         mass_point = self._get_mass_point_at(mouse_pos)
         if mass_point:
-            self._handle_left_click_mass_point(mass_point)
+            self._handle_mass_point_click(mass_point)
             return
-
         spring = self._get_spring_at(mouse_pos)
         if spring:
-            self._handle_left_click_spring(spring)
+            self._handle_spring_click(spring)
             return
-
         self._clear_all_selections()
 
-    def _handle_left_click_mass_point(self, mass_point) -> None:
+    def _handle_mass_point_click(self, mass_point) -> None:
         self._deselect_all(self.springs)
         self._deselect_all(self.obstacles)
-
         selected = [p for p in self.mass_points if p.selected]
-        if mass_point.selected:
+        if mass_point.selected and selected:
             mass_point.selected = False
         elif selected:
-            # Connect the new mass point with each already selected mass point.
             for sel in selected:
                 if not self._spring_exists(mass_point, sel):
                     self.springs.append(
-                        Spring(
-                            (mass_point, sel),
-                            stiffness=self.default_stiffness,
-                            damping=self.default_damping,
-                            rest_length=self.default_rest_length,
-                        )
+                        Spring((mass_point, sel),
+                               stiffness=self.default_stiffness,
+                               damping=self.default_damping,
+                               rest_length=self.default_rest_length)
                     )
             self._deselect_all(selected)
         else:
-            mass_point.selected = True
-
+            self._select_item(mass_point)
         selected = [p for p in self.mass_points if p.selected]
         self.drag_initial_positions = {p: p.pos.copy() for p in selected}
-        self._update_selection()
 
-    def _handle_left_click_spring(self, spring) -> None:
+    def _handle_spring_click(self, spring) -> None:
         self._deselect_all(self.mass_points)
         self._deselect_all(self.obstacles)
-
         if spring.selected:
             spring.selected = False
         else:
-            self._deselect_all(self.springs)
-            spring.selected = True
+            self._select_item(spring)
 
-        self._update_selection()
-
-    def _handle_obstacle_mode_left_click(self, mouse_pos) -> None:
+    def _handle_obstacle_click(self, mouse_pos) -> None:
         if self.drawing_obstacle:
-            if len(self.drawing_obstacle_points) >= 3:
-                if np.linalg.norm(mouse_pos - self.drawing_obstacle_points[0]) < 10:
-                    self.complete_obstacle()
-                    return
+            if len(self.drawing_obstacle_points) >= 3 and \
+               np.linalg.norm(mouse_pos - self.drawing_obstacle_points[0]) < 10:
+                self.complete_obstacle()
+                return
             self.drawing_obstacle_points.append(np.array(mouse_pos))
         else:
             obstacle = self._get_obstacle_at(mouse_pos)
             if obstacle:
-                self._deselect_all(self.mass_points)
-                self._deselect_all(self.springs)
-                self._deselect_all(self.obstacles)
+                self._clear_all_selections()
                 obstacle.selected = True
             else:
                 self.drawing_obstacle = True
@@ -332,22 +336,7 @@ class Sandbox:
         self.drawing_obstacle = False
         self.drawing_obstacle_points = []
 
-    # Helper Methods
-    def _reset_drag_state(self):
-        self.drag_time = None
-        self.drag_initial_mouse = None
-        self.drag_initial_positions = {}
-
-    def _deselect_all(self, items: list) -> None:
-        for item in items:
-            item.selected = False
-
-    def _spring_exists(self, mass_point_a, mass_point_b) -> bool:
-        return any(
-            mass_point_a in (s.a, s.b) and mass_point_b in (s.a, s.b)
-            for s in self.springs
-        )
-
+    # --- Helper Methods ---
     def _get_mass_point_at(self, pos, radius: int = 10) -> MassPoint | None:
         pos = np.array(pos)
         for point in self.mass_points:
@@ -370,7 +359,16 @@ class Sandbox:
                 return obstacle
         return None
 
-    # Update
+    def _spring_exists(self, mass_point_a, mass_point_b) -> bool:
+        return any(mass_point_a in (s.a, s.b) and mass_point_b in (s.a, s.b)
+                   for s in self.springs)
+
+    def _reset_drag_state(self):
+        self.drag_time = None
+        self.drag_initial_mouse = None
+        self.drag_initial_positions.clear()
+
+    # --- Update Simulation ---
     def update(self, delta_time: float) -> None:
         if self.paused:
             if self.single_step:
